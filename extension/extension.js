@@ -13,6 +13,9 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as MessageTray from 'resource:///org/gnome/shell/ui/messageTray.js';
 
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
+import * as Config from 'resource:///org/gnome/shell/misc/config.js';
+
+const SHELL_MAJOR = parseInt(Config.PACKAGE_VERSION.split('.')[0]);
 
 const DBUS_NAME = 'de.jt.Dictate';
 const DBUS_PATH = '/de/jt/Dictate';
@@ -1302,11 +1305,12 @@ class DictateIndicator extends PanelMenu.Button {
         this._pill.setOnDone(() => {
             this._destroyPill();
         });
-        Main.layoutManager.addChrome(this._pill, {
-            affectsInputRegion: false,
-            affectsStruts: false,
-            trackFullscreen: false,
-        });
+        // GNOME 50 hat affectsInputRegion entfernt (Eingabebereich folgt dort „reactive“,
+        // die Pill ist nicht reactive); ein unbekannter Parameter wirft in addChrome.
+        const chrome = {affectsStruts: false, trackFullscreen: false};
+        if (SHELL_MAJOR < 50)
+            chrome.affectsInputRegion = false;
+        Main.layoutManager.addChrome(this._pill, chrome);
     }
 
     _destroyPill() {
@@ -1688,6 +1692,8 @@ class DictateIndicator extends PanelMenu.Button {
                         }
                     }
                 } catch (e) {
+                    // nicht still schlucken: auch Fehler beim Anzeigen der Pill landen hier
+                    console.error(`jt-dictate: Status: ${e}`);
                     this._setRecordingState(false);
                     this._statusItem.label.text = 'Backend nicht erreichbar';
                     this._proxyReady = false;
