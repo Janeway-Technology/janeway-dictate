@@ -34,6 +34,9 @@ const DictateInterfaceXml = `
       <arg type="s" name="message"/>
       <arg type="d" name="progress"/>
     </signal>
+    <signal name="Copied">
+      <arg type="s" name="text"/>
+    </signal>
   </interface>
 </node>
 `;
@@ -511,7 +514,7 @@ class RecordingPill extends St.Widget {
 
         // Container Box
         this._box = new St.BoxLayout({
-            vertical: false,
+            orientation: Clutter.Orientation.HORIZONTAL,
             x_align: Clutter.ActorAlign.CENTER,
             y_align: Clutter.ActorAlign.CENTER,
             x_expand: true,
@@ -1249,6 +1252,16 @@ class DictateIndicator extends PanelMenu.Button {
         // Recording Pill
         this._pill = null;
 
+        // Erkannten Text über die Shell in die Zwischenablage legen (Wayland, ohne
+        // wl-clipboard). Eigenes Abo statt Proxy: kommt auch an, während der Proxy
+        // nach einem Backend-Neustart noch nicht wieder verbunden ist.
+        this._copiedSub = Gio.DBus.session.signal_subscribe(
+            null, DBUS_INTERFACE, 'Copied', DBUS_PATH, null, Gio.DBusSignalFlags.NONE,
+            (_c, _sender, _path, _iface, _signal, params) => {
+                if (!this._destroyed)
+                    St.Clipboard.get_default().set_text(St.ClipboardType.CLIPBOARD, params.deepUnpack()[0]);
+            });
+
         // D-Bus Proxy
         this._connectProxyOrStartBackend();
 
@@ -1848,6 +1861,10 @@ class DictateIndicator extends PanelMenu.Button {
     destroy() {
         this._destroyed = true;
         this._stopStatusCheck();
+        if (this._copiedSub) {
+            Gio.DBus.session.signal_unsubscribe(this._copiedSub);
+            this._copiedSub = 0;
+        }
         if (this._signalId && this._proxy) {
             this._proxy.disconnect(this._signalId);
             this._signalId = null;

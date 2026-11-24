@@ -135,6 +135,12 @@ class JtDictateDBus(dbus.service.Object):
         """Signal für Modell-Lade-Fortschritt (message, 0.0-1.0)."""
         pass
 
+    @dbus.service.signal(DBUS_SERVICE, signature='s')
+    def Copied(self, text):
+        """Erkannter Text für die Zwischenablage. Die Extension setzt ihn über
+        GNOME Shell selbst (geht auf Wayland ohne wl-clipboard)."""
+        pass
+
 
 class Transcriber:
     """Whisper-Transkription für vollständige Audio-Aufnahmen."""
@@ -468,6 +474,8 @@ class JtDictate:
             if final_text:
                 if self.settings.get("auto_clipboard"):
                     self.copy_to_clipboard(final_text)
+                    if getattr(self, "dbus_obj", None):
+                        GLib.idle_add(self.dbus_obj.Copied, final_text)
 
                 self._play_sound("finish")
                 preview = final_text[:80] + "..." if len(final_text) > 80 else final_text
