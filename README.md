@@ -14,7 +14,7 @@ Click the panel icon or press a hotkey, speak, and your speech is transcribed of
 - **5 visualization types**: Bars, Waveform, Pulse, Circle, Equalizer (default: 15 bars)
 - **15 built-in notification sounds** with per-sound volume control
 - **Full customization** via GNOME Preferences panel (right-click → Settings → Alle Einstellungen)
-- **Theme system** — 10 built-in presets (Standard, Neon, Minimal, Ocean, Sunset, Aurora, Cherry, Forest, Midnight, Rosé) + custom themes
+- **Theme system** — 12 built-in presets (Jaynix (default, matches the Jaynix desktop: blue → magenta → red gradient, tinted glass), Jaynix Hell, Standard, Neon, Minimal, Ocean, Sunset, Aurora, Cherry, Forest, Midnight, Rosé) + custom themes
 - **Dark/Light mode** — follows GNOME system color scheme
 - **Settings & theme export/import** as JSON
 - **Optional GNOME notifications** (disabled by default)

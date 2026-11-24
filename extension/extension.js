@@ -6,6 +6,7 @@ import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Clutter from 'gi://Clutter';
+import Cairo from 'cairo';
 
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
@@ -96,28 +97,30 @@ const DEFAULT_SETTINGS = {
     pill_width: 200,
     pill_height: 40,
     pill_border_radius: 20,
-    pill_bg_color: 'rgba(15,15,25,0.82)',
-    pill_border_color: 'rgba(255,255,255,0.12)',
+    pill_bg_color: 'rgba(24,24,40,0.86)',
+    pill_bg_gradient_end: 'rgba(40,20,34,0.86)',
+    pill_border_color: 'rgba(255,255,255,0.16)',
     pill_border_width: 1,
     pill_blur: 12,
-    pill_shadow_intensity: 0.4,
+    pill_shadow_intensity: 0.45,
     pill_margin_top: 60,
     pill_margin_horizontal: 0,
     pill_position: 'bottom-center',
     visualization_type: 'bars',
-    bar_color_left: '#6c9ff8',
-    bar_color_right: '#f06292',
+    bar_color_left: '#4f6bff',
+    bar_color_right: '#ff4060',
     bar_gradient: true,
     bar_count: 15,
     icon_name: 'audio-input-microphone-symbolic',
-    icon_color: '#e8eaed',
+    icon_color: '#f4f2fa',
     custom_icon_path: '',
-    recording_color: '#ef5350',
-    processing_color: '#ffa726',
-    spinner_color: '#ffa726',
-    checkmark_color: '#66bb6a',
+    recording_color: '#ff4d6d',
+    processing_color: '#b84fd8',
+    spinner_color: '#b84fd8',
+    checkmark_color: '#c86bff',
     pill_animation: 'minimal',
-    active_theme: 'default',
+    accent_gradient: true,
+    active_theme: 'jaynix',
     follow_system_theme: false,
     sound_enabled: true,
     sound_start_volume: 0.5,
@@ -134,6 +137,32 @@ const DEFAULT_SETTINGS = {
     pill_display_monitor: 'active',
     checkmark_effect: 'fade',
 };
+// Hintergrund der Pill: Farbe, optional als waagrechter Verlauf (Theme „Jaynix“)
+function _pillBgCss(s) {
+    let css = `background-color:${s.pill_bg_color};`;
+    if (s.pill_bg_gradient_end)
+        css += `background-gradient-direction:horizontal;background-gradient-start:${s.pill_bg_color};background-gradient-end:${s.pill_bg_gradient_end};`;
+    return css;
+}
+
+// Strich in einer Farbe oder im Verlauf der Balkenfarben (links → rechts)
+function _setStroke(cr, size, color, gradient, alpha) {
+    if (gradient) {
+        let pat = new Cairo.LinearGradient(0, size, size, 0);
+        pat.addColorStopRGBA(0, gradient[0].r, gradient[0].g, gradient[0].b, alpha);
+        pat.addColorStopRGBA(1, gradient[1].r, gradient[1].g, gradient[1].b, alpha);
+        cr.setSource(pat);
+    } else {
+        cr.setSourceRGBA(color.r, color.g, color.b, alpha);
+    }
+}
+
+function _accentGradient(s) {
+    return s.accent_gradient
+        ? [_parseColorComponents(s.bar_color_left), _parseColorComponents(s.bar_color_right)]
+        : null;
+}
+
 
 // --- Hilfsfunktionen ---
 
@@ -398,13 +427,14 @@ class VisualizationCanvas extends St.DrawingArea {
 
 const SpinnerCanvas = GObject.registerClass(
 class SpinnerCanvas extends St.DrawingArea {
-    _init(size, color) {
+    _init(size, color, gradient = null) {
         super._init({
             width: size,
             height: size,
         });
         this._size = size;
         this._color = _parseColorComponents(color || '#ffffff');
+        this._gradient = gradient;
         this._angle = 0;
         this._spinId = null;
 
@@ -440,12 +470,12 @@ class SpinnerCanvas extends St.DrawingArea {
         cr.setLineCap(1); // ROUND
 
         // Hintergrund-Ring (schwach)
-        cr.setSourceRGBA(c.r, c.g, c.b, 0.15);
+        _setStroke(cr, s, c, this._gradient, 0.15);
         cr.arc(cx, cy, radius, 0, 2 * Math.PI);
         cr.stroke();
 
         // Drehender Bogen (3/4 Kreis)
-        cr.setSourceRGBA(c.r, c.g, c.b, 0.9);
+        _setStroke(cr, s, c, this._gradient, 0.95);
         cr.arc(cx, cy, radius, this._angle, this._angle + 1.5 * Math.PI);
         cr.stroke();
 
@@ -462,13 +492,14 @@ class SpinnerCanvas extends St.DrawingArea {
 
 const CheckmarkCanvas = GObject.registerClass(
 class CheckmarkCanvas extends St.DrawingArea {
-    _init(size, color) {
+    _init(size, color, gradient = null) {
         super._init({
             width: size,
             height: size,
         });
         this._size = size;
         this._color = _parseColorComponents(color || '#4ade80');
+        this._gradient = gradient;
 
         this.connect('repaint', (area) => this._draw(area));
     }
@@ -481,7 +512,7 @@ class CheckmarkCanvas extends St.DrawingArea {
         cr.setLineWidth(2.5);
         cr.setLineCap(1); // ROUND
         cr.setLineJoin(1); // ROUND
-        cr.setSourceRGBA(c.r, c.g, c.b, 0.9);
+        _setStroke(cr, s, c, this._gradient, 0.95);
 
         // Haekchen zeichnen
         let pad = s * 0.25;
@@ -584,7 +615,7 @@ class RecordingPill extends St.Widget {
             width: ${s.pill_width}px;
             height: ${s.pill_height}px;
             border-radius: ${s.pill_border_radius}px;
-            background-color: ${s.pill_bg_color};
+            ${_pillBgCss(s)}
             border: ${s.pill_border_width}px solid ${s.pill_border_color};
             padding: 4px 12px;
         `;
@@ -607,10 +638,12 @@ class RecordingPill extends St.Widget {
 
         if (isDark) {
             this._settings.pill_bg_color = 'rgba(0,0,0,0.80)';
+            this._settings.pill_bg_gradient_end = '';
             this._settings.pill_border_color = 'rgba(255,255,255,0.12)';
             this._settings.icon_color = '#ffffff';
         } else {
             this._settings.pill_bg_color = 'rgba(255,255,255,0.85)';
+            this._settings.pill_bg_gradient_end = '';
             this._settings.pill_border_color = 'rgba(0,0,0,0.12)';
             this._settings.icon_color = '#1e1e1e';
         }
@@ -849,7 +882,7 @@ class RecordingPill extends St.Widget {
 
         // Spinner vorbereiten (wird während Morph eingeblendet)
         let spinSize = Math.max(16, circleSize - 12);
-        this._spinner = new SpinnerCanvas(spinSize, s.spinner_color || s.processing_color || '#ffa726');
+        this._spinner = new SpinnerCanvas(spinSize, s.spinner_color || s.processing_color || '#ffa726', _accentGradient(s));
         this._spinner.opacity = 0;
         this._spinner.set_x_align(Clutter.ActorAlign.CENTER);
         this._spinner.set_y_align(Clutter.ActorAlign.CENTER);
@@ -882,7 +915,7 @@ class RecordingPill extends St.Widget {
                 this.set_position(Math.round(cx), Math.round(cy));
                 this.set_size(Math.round(cw), Math.round(ch));
 
-                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;background-color:${s.pill_bg_color};border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
+                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;${_pillBgCss(s)}border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
                 if (s.pill_shadow_intensity > 0)
                     style += `-st-shadow:0px 4px 12px 0px rgba(0,0,0,${s.pill_shadow_intensity});`;
                 this._box.set_style(style);
@@ -947,7 +980,7 @@ class RecordingPill extends St.Widget {
                 );
                 this.set_size(Math.round(cw), Math.round(ch));
 
-                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;background-color:${s.pill_bg_color};border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
+                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;${_pillBgCss(s)}border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
                 if (s.pill_shadow_intensity > 0)
                     style += `-st-shadow:0px 4px 12px 0px rgba(0,0,0,${s.pill_shadow_intensity});`;
                 this._box.set_style(style);
@@ -1008,7 +1041,7 @@ class RecordingPill extends St.Widget {
                 );
                 this.set_size(Math.round(cw), Math.round(ch));
 
-                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;background-color:${s.pill_bg_color};border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
+                let style = `width:${Math.round(cw)}px;height:${Math.round(ch)}px;border-radius:${Math.round(cbr)}px;${_pillBgCss(s)}border:${s.pill_border_width}px solid ${s.pill_border_color};padding:0px;`;
                 if (s.pill_shadow_intensity > 0)
                     style += `-st-shadow:0px 4px 12px 0px rgba(0,0,0,${s.pill_shadow_intensity});`;
                 this._box.set_style(style);
@@ -1048,7 +1081,7 @@ class RecordingPill extends St.Widget {
 
         // Spinner→Haekchen Crossfade (identisch zur Simulation: in-place, scale 0.7→1.0)
         let checkSize = Math.max(16, circleSize - 12);
-        this._checkmark = new CheckmarkCanvas(checkSize, s.checkmark_color || '#66bb6a');
+        this._checkmark = new CheckmarkCanvas(checkSize, s.checkmark_color || '#66bb6a', _accentGradient(s));
         this._checkmark.opacity = 0;
         this._checkmark.set_x_align(Clutter.ActorAlign.CENTER);
         this._checkmark.set_y_align(Clutter.ActorAlign.CENTER);
