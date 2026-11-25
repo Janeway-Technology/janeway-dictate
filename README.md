@@ -19,14 +19,14 @@ Click the panel icon or press a hotkey, speak, and your speech is transcribed of
 
 - **Offline transcription** using faster-whisper (runs entirely on your machine)
 - **GNOME Shell Extension** with panel icon (left-click to toggle, right-click for settings)
-- **Recording Pill** — floating overlay widget with audio visualization during recording
+- **Recording Pill**: floating overlay widget with audio visualization during recording
 - **3 animation styles**: Smooth (scale+slide), Bounce (spring physics), Minimal (in-place crossfade)
-- **Processing visualization** — pill morphs to spinning circle, shows checkmark on completion
+- **Processing visualization**: pill morphs to spinning circle, shows checkmark on completion
 - **5 visualization types**: Bars, Waveform, Pulse, Circle, Equalizer (default: 15 bars)
 - **15 built-in notification sounds** with per-sound volume control
 - **Full customization** via GNOME Preferences panel (right-click → Settings → Alle Einstellungen)
-- **Theme system** — 12 built-in presets (Jaynix (default, matches the Jaynix desktop: blue → magenta → red gradient, tinted glass), Jaynix Hell, Standard, Neon, Minimal, Ocean, Sunset, Aurora, Cherry, Forest, Midnight, Rosé) + custom themes
-- **Dark/Light mode** — follows GNOME system color scheme
+- **Theme system**: 12 built-in presets (Jaynix (default, matches the Jaynix desktop: blue → magenta → red gradient, tinted glass), Jaynix Hell, Standard, Neon, Minimal, Ocean, Sunset, Aurora, Cherry, Forest, Midnight, Rosé) + custom themes
+- **Dark/Light mode**: follows GNOME system color scheme
 - **Settings & theme export/import** as JSON
 - **Optional GNOME notifications** (disabled by default)
 - **Clipboard integration**: transcribed text is automatically copied
