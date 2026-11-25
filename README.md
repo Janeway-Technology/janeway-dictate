@@ -1,4 +1,15 @@
-# Janeway Dictate
+<!-- readme-kopf:anfang (erzeugt: dev/readme-kopf.py) -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Janeway-Technology/.github/main/assets/wortmarken/janeway-dictate-dunkel.svg">
+    <img alt="Janeway Dictate" src="https://raw.githubusercontent.com/Janeway-Technology/.github/main/assets/wortmarken/janeway-dictate-hell.svg" width="440">
+  </picture>
+</p>
+
+<p align="center"><b>Janeway Dictate: Push-to-Talk-Spracherkennung für GNOME und Linux mit faster-whisper</b></p>
+
+<p align="center"><a href="https://github.com/Janeway-Technology">Janeway Technology</a> › <a href="https://github.com/Janeway-Technology#weitere-janeway-projekte">Weitere Janeway Projekte</a> › Dictate</p>
+<!-- readme-kopf:ende -->
 
 Push-to-Talk Speech-to-Text for GNOME/Linux.
 
